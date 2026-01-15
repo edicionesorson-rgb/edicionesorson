@@ -1,0 +1,259 @@
+import React, { useState, useMemo, useEffect } from 'react';
+import { ShoppingCart, Search, Trash2, Plus, Minus, BookOpen, Send, X, CheckCircle } from 'lucide-react';
+
+const App = () => {
+  // Datos extraídos del CSV del catálogo
+  const rawData = [
+    { category: "Poesía", title: "Belli Gioconda - Escandalo De Miel", price: 25000 },
+    { category: "Poesía", title: "Dalton Roque - Un Libro Levemente Odioso", price: 20000 },
+    { category: "Poesía", title: "Dickinson Emily - 60 Poemas", price: 20000 },
+    { category: "Poesía", title: "Juarroz, Roberto - Poesia Vertical - Antologia Esencial", price: 25000 },
+    { category: "Poesía", title: "López Julián - Meteoro", price: 20000 },
+    { category: "Poesía", title: "Pizarnik Alejandra - Extraccion De La Piedra De Locura", price: 20000 },
+    { category: "Poesía", title: "Pizarnik Alejandra & León Ostrov - Cartas", price: 20000 },
+    { category: "Poesía", title: "Pizarnik Alejandra - Poesía completa", price: 35000 },
+    { category: "Poesía", title: "Plath. Sylvia - Ariel (edición bilingüe)", price: 25000 },
+    { category: "Poesía", title: "Plath. Sylvia - Poesía completa", price: 35000 },
+    { category: "Poesía", title: "Sexton Anne - Mi boca florece como un corte", price: 20000 },
+    { category: "Poesía", title: "STORNI ALFONSINA - Poesias", price: 20000 },
+    { category: "Poesía", title: "Vilariño Idea - Poesía completa", price: 30000 },
+    { category: "Narrativa", title: "Abreu Andrea - Panza de burro", price: 20000 },
+    { category: "Narrativa", title: "Alcott Louisa May - Mujercitas", price: 35000 },
+    { category: "Narrativa", title: "Austen Jane - Orgullo y Prejuicio", price: 30000 },
+    { category: "Narrativa", title: "Biolcati Maria - La mujer de la casa de los perros", price: 25000 },
+    { category: "Ciencia Ficción", title: "Olaf Stapledon - Hacedor de estrellas", price: 25000 },
+    { category: "Ciencia Ficción", title: "Olaf Stapledon - JUAN RARO", price: 25000 },
+    { category: "Ciencia Ficción", title: "Orwell George - 1984", price: 30000 },
+    { category: "Autoconocimiento", title: "Arroyo Stephen - Manual De Interpretación De La Carta Natal", price: 25000 },
+    { category: "Autoconocimiento", title: "Castaneda Carlos - El arte de ensoñar", price: 30000 },
+    { category: "Autoconocimiento", title: "Castaneda Carlos - El Don Del Aguila", price: 30000 },
+    { category: "Autoconocimiento", title: "Castaneda Carlos - El fuego interno", price: 30000 },
+    { category: "Autoconocimiento", title: "Clear James - Hábitos atómicos", price: 25000 },
+    { category: "Autoconocimiento", title: "Jean-Luc Nancy - 58 indicios sobre el cuerpo", price: 20000 }
+  ];
+
+  const [cart, setCart] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [orderConfirmed, setOrderConfirmed] = useState(false);
+
+  // Filtrar productos por búsqueda
+  const filteredProducts = useMemo(() => {
+    return rawData.filter(product => 
+      product.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm]);
+
+  // Agrupar productos por categoría
+  const groupedProducts = useMemo(() => {
+    return filteredProducts.reduce((acc, product) => {
+      if (!acc[product.category]) acc[product.category] = [];
+      acc[product.category].push(product);
+      return acc;
+    }, {});
+  }, [filteredProducts]);
+
+  const addToCart = (product) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.title === product.title);
+      if (existing) {
+        return prev.map(item => 
+          item.title === product.title ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
+  };
+
+  const updateQuantity = (title, delta) => {
+    setCart(prev => prev.map(item => {
+      if (item.title === title) {
+        const newQty = Math.max(0, item.quantity + delta);
+        return { ...item, quantity: newQty };
+      }
+      return item;
+    }).filter(item => item.quantity > 0));
+  };
+
+  const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const formatCurrency = (val) => {
+    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
+  };
+
+  const handleCheckout = () => {
+    const message = `¡Hola Ediciones Orson! Me gustaría realizar un pedido:\n\n` +
+      cart.map(item => `- ${item.title} x${item.quantity} (${formatCurrency(item.price * item.quantity)})`).join('\n') +
+      `\n\n*Total: ${formatCurrency(total)}*\n\n` +
+      `Método de pago: Mercado Pago (edicionesorson)\n` +
+      `Coordinaré la entrega/envío por aquí.`;
+    
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/5493585141623?text=${encodedMessage}`, '_blank'); // Reemplazar con el número real
+    setOrderConfirmed(true);
+    setTimeout(() => {
+      setOrderConfirmed(false);
+      setCart([]);
+      setIsCartOpen(false);
+    }, 3000);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+      {/* Header */}
+      <header className="sticky top-0 z-30 bg-white border-b shadow-sm">
+        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BookOpen className="text-indigo-600" size={28} />
+            <h1 className="text-xl font-bold tracking-tight text-indigo-900 uppercase">Ediciones Orson</h1>
+          </div>
+          
+          <button 
+            onClick={() => setIsCartOpen(true)}
+            className="relative p-2 hover:bg-slate-100 rounded-full transition-colors"
+          >
+            <ShoppingCart size={24} />
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">
+                {cartCount}
+              </span>
+            )}
+          </button>
+        </div>
+      </header>
+
+      <main className="max-w-5xl mx-auto px-4 py-8">
+        {/* Banner Informativo */}
+        <div className="mb-8 p-4 bg-indigo-50 border border-indigo-100 rounded-xl text-sm text-indigo-800">
+          <p className="font-semibold mb-1">ℹ️ Información Importante:</p>
+          <p>Papel Ledesma Nat 75gr (B&N) y tapas full color laminadas. Demora de 5 a 10 días hábiles.</p>
+        </div>
+
+        {/* Buscador */}
+        <div className="relative mb-8">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+          <input 
+            type="text" 
+            placeholder="Buscar por título o autor..." 
+            className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* Listado de Productos */}
+        {Object.entries(groupedProducts).length > 0 ? (
+          Object.entries(groupedProducts).map(([category, products]) => (
+            <section key={category} className="mb-10">
+              <h2 className="text-lg font-bold text-slate-700 mb-4 pb-2 border-b-2 border-indigo-200 inline-block">
+                {category}
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {products.map((product, idx) => (
+                  <div key={idx} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center hover:shadow-md transition-shadow">
+                    <div className="flex-1 pr-4">
+                      <h3 className="font-medium text-slate-800 leading-snug mb-1">{product.title}</h3>
+                      <p className="text-indigo-600 font-bold">{formatCurrency(product.price)}</p>
+                    </div>
+                    <button 
+                      onClick={() => addToCart(product)}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-lg transition-colors flex items-center gap-2 px-3 text-sm font-semibold"
+                    >
+                      <Plus size={16} /> Agregar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))
+        ) : (
+          <div className="text-center py-20 text-slate-500">
+            No se encontraron libros que coincidan con tu búsqueda.
+          </div>
+        )}
+      </main>
+
+      {/* Modal del Carrito */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsCartOpen(false)} />
+          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-4 border-b flex items-center justify-between bg-slate-50">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <ShoppingCart className="text-indigo-600" /> Tu Pedido
+              </h2>
+              <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-slate-200 rounded-full">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {cart.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-4">
+                  <ShoppingCart size={64} strokeWidth={1} />
+                  <p>Tu carrito está vacío</p>
+                </div>
+              ) : (
+                cart.map((item) => (
+                  <div key={item.title} className="flex gap-4 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold leading-tight">{item.title}</h4>
+                      <p className="text-indigo-600 text-sm font-bold mt-1">{formatCurrency(item.price)}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button 
+                        onClick={() => updateQuantity(item.title, -1)}
+                        className="p-1 hover:bg-white rounded border border-slate-200"
+                      >
+                        <Minus size={14} />
+                      </button>
+                      <span className="font-bold text-sm min-w-[1.5rem] text-center">{item.quantity}</span>
+                      <button 
+                        onClick={() => updateQuantity(item.title, 1)}
+                        className="p-1 hover:bg-white rounded border border-slate-200"
+                      >
+                        <Plus size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {cart.length > 0 && (
+              <div className="p-6 border-t bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <div className="flex justify-between items-center mb-6">
+                  <span className="text-slate-500 font-medium">Total Estimado</span>
+                  <span className="text-2xl font-black text-indigo-700">{formatCurrency(total)}</span>
+                </div>
+                
+                <div className="space-y-3">
+                  <button 
+                    onClick={handleCheckout}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-green-100 transition-all active:scale-95"
+                  >
+                    <Send size={20} /> Enviar Pedido por WhatsApp
+                  </button>
+                  <p className="text-[11px] text-center text-slate-400 leading-tight">
+                    Al confirmar, se abrirá un chat de WhatsApp con el detalle de tu pedido para coordinar pago y entrega.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Toast de confirmación */}
+      {orderConfirmed && (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[60] bg-slate-900 text-white px-6 py-3 rounded-full flex items-center gap-3 shadow-2xl animate-bounce">
+          <CheckCircle className="text-green-400" />
+          <span className="font-semibold">¡Pedido enviado con éxito!</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default App;
